@@ -1,0 +1,26 @@
+{
+  "msi": {
+    "installer_type": "Windows Installer (MSI)",
+    "install_command": "msiexec /i \"{filename}\" /qn /norestart",
+    "uninstall_command": "msiexec /x {product_code} /qn /norestart",
+    "detection_method": "MSI Product Code"
+  },
+  "exe_inno": {
+    "installer_type": "Inno Setup EXE",
+    "install_command": "\"{filename}\" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART",
+    "uninstall_command": "\"C:\\Program Files\\{app_name}\\unins000.exe\" /VERYSILENT",
+    "detection_method": "Registry Key (DisplayName)"
+  },
+  "exe_nsis": {
+    "installer_type": "NSIS EXE",
+    "install_command": "\"{filename}\" /S",
+    "uninstall_command": "\"C:\\Program Files\\{app_name}\\uninstall.exe\" /S",
+    "detection_method": "Registry Key (DisplayName)"
+  },
+  "interactive": {
+      "installer_type": "Interactive EXE (with ServiceUI)",
+      "install_command": "ServiceUI.exe -process:explorer.exe \"{filename}\"",
+      "uninstall_command": "Requires manual uninstall command.",
+      "detection_method": "Registry Key (DisplayName)"
+  }
+}
