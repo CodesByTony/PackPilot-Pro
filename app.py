@@ -24,7 +24,6 @@ except FileNotFoundError:
 def generate_icon(app_name):
     width, height = 256, 256
     
-    # Create a background gradient
     color1 = (25, 32, 43) 
     color2 = (44, 56, 75)
     img = Image.new('RGB', (width, height), color1)
@@ -35,7 +34,6 @@ def generate_icon(app_name):
         b = int(color1[2] + (color2[2] - color1[2]) * y / height)
         draw.line([(0, y), (width, y)], fill=(r, g, b))
 
-    # Get Initials
     words = app_name.split()
     initials = ""
     if len(words) >= 2:
@@ -46,15 +44,11 @@ def generate_icon(app_name):
         initials = "App"
     initials = initials.upper()
 
-    # Add Text (Initials)
     try:
-        # On many systems, a default font path might not work. We'll try a common one.
         font = ImageFont.truetype("DejaVuSans-Bold.ttf", 120)
     except IOError:
-        # This is a safe fallback that should work on Hugging Face Spaces
         font = ImageFont.load_default()
     
-    # Use textbbox for better centering
     try:
         text_bbox = draw.textbbox((0, 0), initials, font=font)
         text_width = text_bbox[2] - text_bbox[0]
@@ -63,9 +57,7 @@ def generate_icon(app_name):
         y = (height - text_height) / 2
         draw.text((x, y), initials, font=font, fill=(255, 255, 255))
     except Exception as e:
-        # Fallback for older Pillow versions if textbbox is not available
         draw.text((60, 60), initials, font=font, fill=(255, 255, 255))
-
 
     return img
 
@@ -74,32 +66,39 @@ def display_recipe_card(title, content, language='powershell'):
     st.subheader(title, divider='blue')
     key = title.replace(" ", "_").lower()
     
-    col1, col2 = st.columns([0.9, 0.1])
-    with col1:
-        st.code(content, language=language)
-    with col2:
-        if st.button("Copy", key=f"copy_{key}"):
-            st_copy_to_clipboard(content, f"{title} copied!", key=f"clip_{key}")
-            st.success("Copied!")
+    st.code(content, language=language)
+    st_copy_to_clipboard(content, f"Copy {title}", key=key)
+
 
 # --- Main Application UI ---
-# Inject custom CSS for a more professional look
 st.markdown("""
 <style>
     .stButton>button {
         border-color: #4A90E2;
         color: #4A90E2;
+        width: 100%;
     }
     .stButton>button:hover {
         border-color: #357ABD;
-        color: #357ABD;
-        background-color: #f0f2f6;
+        color: #FFFFFF;
+        background-color: #4A90E2;
     }
-    .st-emotion-cache-10trblm { /* This targets the main block container */
+    .stDownloadButton>button {
+        border-color: #4CAF50;
+        background-color: #4CAF50;
+        color: white;
+        width: 100%;
+    }
+    .stDownloadButton>button:hover {
+        border-color: #45a049;
+        background-color: #45a049;
+    }
+    div[data-testid="stVerticalBlock"] {
         border: 1px solid #e6e6e6;
         border-radius: 10px;
-        padding: 20px;
+        padding: 2rem;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        background-color: #ffffff;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -109,9 +108,7 @@ st.title("🚀 PackPilot Pro")
 st.markdown("##### The One-Click Packaging Dashboard for Intune & Patch My PC")
 st.divider()
 
-# --- Main container ---
 with st.container():
-
     uploaded_file = st.file_uploader(
         "**Step 1: Drag & Drop Your Installer File Here** (.exe or .msi)",
         type=['exe', 'msi']
@@ -122,7 +119,6 @@ with st.container():
         st.success(f"✅ Successfully uploaded `{file_name}`")
         st.divider()
 
-        # --- Configuration Options ---
         st.markdown("**Step 2: Verify Details & Select Installer Type**")
         col1, col2 = st.columns(2)
         with col1:
@@ -132,7 +128,6 @@ with st.container():
         with col2:
             is_interactive = st.checkbox("Installer requires user interaction (Use ServiceUI trick)")
             
-            # Conditionally show the selectbox
             if is_interactive:
                 installer_type_key = "interactive"
                 st.info("ServiceUI mode selected. Install command will be adjusted.")
@@ -144,21 +139,17 @@ with st.container():
                 )
         
         st.divider()
-        # --- Generate Button ---
         if st.button("🚀 Generate Packaging Recipe", type="primary", use_container_width=True):
             with st.spinner('Cooking up your recipe...'):
-                
                 recipe = RULES[installer_type_key]
-
                 st.header("Your Instant Recipe Card", divider='rainbow')
 
-                # --- Display Generated Icon & General Info ---
                 info_col, icon_col = st.columns([2, 1])
                 with info_col:
                     st.subheader("📋 Page 2: General Information")
-                    st.text_input("App Name", value=app_name, disabled=True)
-                    st.text_input("Vendor", value=vendor, disabled=True)
-                    st.text_input("Version", value=version, disabled=True)
+                    st.text_input("App Name for PMPC:", value=app_name, disabled=True, key="disp_app_name")
+                    st.text_input("Vendor for PMPC:", value=vendor, disabled=True, key="disp_vendor")
+                    st.text_input("Version for PMPC:", value=version, disabled=True, key="disp_version")
                 with icon_col:
                     st.subheader("🎨 Generated Icon")
                     generated_icon = generate_icon(app_name)
@@ -169,11 +160,9 @@ with st.container():
                     st.download_button("Download Icon (.png)", buf.getvalue(), f"{app_name.replace(' ', '_')}_icon.png", "image/png", use_container_width=True)
 
                 st.divider()
-                # --- Display Configuration & Detection Rules ---
                 st.header("⚙️ Page 3 & 4: Configuration & Detection")
                 
                 install_cmd = recipe['install_command'].format(filename=file_name)
-                # A simple placeholder for product_code and app_name in uninstall
                 uninstall_cmd = recipe['uninstall_command'].format(app_name=app_name, product_code="{YOUR_PRODUCT_CODE}")
                 
                 display_recipe_card("Silent Install Command", install_cmd)
@@ -188,7 +177,6 @@ with st.container():
                     st.warning("For MSI detection, you will need to find the Product Code after a test installation.")
 
                 st.divider()
-                # --- Summary & Next Steps ---
                 st.header("✅ Page 5: Summary & Final Steps", divider='rainbow')
                 st.success("**Your recipe is ready!** Use the copy buttons above to fill out Patch My PC.")
                 st.markdown(f"""
