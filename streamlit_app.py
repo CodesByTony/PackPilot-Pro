@@ -18,7 +18,7 @@ try:
         RULES = json.load(f)
 except FileNotFoundError:
     st.error("Fatal Error: `rules.json` not found. Please ensure the file exists in the repository.")
-    st.stop() # Stop the app from running further
+    st.stop()
 
 # --- AI Icon Generator ---
 def generate_icon(app_name):
