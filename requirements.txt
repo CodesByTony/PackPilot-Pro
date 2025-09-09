@@ -1,3 +1,4 @@
 streamlit
 pillow
 requests
+PyYAML
