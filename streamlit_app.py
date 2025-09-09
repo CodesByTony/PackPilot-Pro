@@ -8,8 +8,7 @@ import base64
 st.set_page_config(
     page_title="PackPilot Pro",
     page_icon="🚀",
-    layout="wide",
-    initial_sidebar_state="collapsed"
+    layout="wide"
 )
 
 # --- Function to load and encode YOUR background image from the repository ---
@@ -49,61 +48,41 @@ html, body, [class*="st-"] {
     font-family: 'Inter', sans-serif;
 }
 .stApp {
-    color: #0d1117; /* Dark text for readability */
+    color: #0d1117;
 }
 
-/* --- HIDE THE UNWANTED SIDEBAR --- */
+/* --- HIDE THE SIDEBAR COMPLETELY --- */
 [data-testid="stSidebar"] {
     display: none;
-}
-
-/* --- Top-Right Navigation Header --- */
-.header {
-    position: fixed;
-    top: 0;
-    right: 0;
-    padding: 1rem 2rem;
-    z-index: 999;
-}
-.header .stButton>button {
-    background-color: transparent;
-    border: 1px solid #d0d0d0;
-    color: #505050;
-    font-weight: 600;
-    border-radius: 8px;
-}
-.header .stButton>button:hover {
-    background-color: #f0f0f0;
-    border-color: #a0a0a0;
-}
-.header .stButton>button:disabled {
-    color: #aaa;
 }
 
 /* --- Main Content Centering --- */
 .main .block-container {
     max-width: 900px;
     margin: 0 auto;
-    padding-top: 10vh; /* Push content down from the top */
+    padding-top: 5vh; /* Push content down from the top */
 }
 
 /* --- BIGGER Title & Tagline --- */
 .title-container {
     text-align: center;
-    margin-bottom: 2.5rem;
+    margin-bottom: 3rem;
 }
 .title-container .title {
-    font-size: 5.5rem; /* Increased size */
+    font-size: 5.5rem;
     font-weight: 700;
     color: #2c3e50;
     letter-spacing: -4px;
     margin: 0;
+    padding: 0;
 }
 .title-container .title sup {
-    font-size: 2rem; /* Increased size */
+    font-size: 2.2rem; /* Increased size */
     font-weight: 600;
     color: #FF4500;
-    top: -2.5rem; /* Adjust position */
+    top: -2.8rem; /* Adjusted position */
+    position: relative;
+    left: 5px;
 }
 .title-container .tagline {
     font-size: 1.5rem; /* Increased size */
@@ -122,8 +101,12 @@ html, body, [class*="st-"] {
 }
 
 /* --- FIX UPLOADER BUTTON TEXT COLOR --- */
+[data-testid="stFileUploader"] {
+    padding: 1.5rem;
+}
 [data-testid="stFileUploader"] label {
-    font-weight: 600;
+    font-size: 1.1rem !important;
+    font-weight: 600 !important;
     color: #333 !important; /* Make label text dark */
 }
 [data-testid="stFileUploader"] button {
@@ -138,7 +121,7 @@ html, body, [class*="st-"] {
 }
 
 /* --- Primary "Generate" Button --- */
-.stButton>button.primary-button {
+.stButton>button {
     font-weight: 600;
     border-radius: 8px;
     padding: 0.75rem 1.5rem;
@@ -148,7 +131,7 @@ html, body, [class*="st-"] {
     transition: all 0.3s ease;
     box-shadow: 0 4px 15px rgba(255, 69, 0, 0.2);
 }
-.stButton>button.primary-button:hover {
+.stButton>button:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(255, 69, 0, 0.3);
 }
@@ -173,16 +156,6 @@ def display_recipe_card(title, content, language='powershell'):
     st.subheader(title, divider='orange')
     st.code(content, language=language)
 
-# --- Header Section (Top Right Buttons) ---
-with st.container():
-    st.markdown('<div class="header">', unsafe_allow_html=True)
-    cols = st.columns([1, 1])
-    with cols[0]:
-        st.button("📄 View Recipes", disabled=True, use_container_width=True, key="nav1")
-    with cols[1]:
-        st.button("📊 View Dashboard", disabled=True, use_container_width=True, key="nav2")
-    st.markdown('</div>', unsafe_allow_html=True)
-
 # --- Main Title & Tagline ---
 st.markdown("""
 <div class="title-container">
@@ -195,9 +168,10 @@ st.markdown("""
 with st.container():
     st.markdown('<div class="card">', unsafe_allow_html=True)
     
-    uploaded_file = st.file_uploader("", type=['exe', 'msi'], label_visibility="collapsed")
+    uploaded_file = st.file_uploader("Upload Your Installer to Begin Analysis", type=['exe', 'msi'])
     
     if uploaded_file:
+        # Using session state to remember inputs after button click
         if 'app_name' not in st.session_state or st.session_state.get('uploaded_filename') != uploaded_file.name:
             st.session_state.app_name = uploaded_file.name.split('.')[0].replace('_', ' ').replace('-', ' ').title()
             st.session_state.vendor = "VendorName"
