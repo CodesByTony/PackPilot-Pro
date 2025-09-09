@@ -33,10 +33,10 @@ def set_background(image_file):
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-/* Global Rule: Make ALL text black unless specified otherwise */
+/* Global Rule: Make ALL text black */
 html, body, [class*="st-"], .st-emotion-cache-16idsys p {
     font-family: 'Inter', sans-serif;
-    color: #212529 !important; /* Force black text */
+    color: #212529 !important;
 }
 [data-testid="stSidebar"] { display: none; }
 .main .block-container { max-width: 900px; margin: 0 auto; padding-top: 5vh; }
@@ -51,8 +51,28 @@ html, body, [class*="st-"], .st-emotion-cache-16idsys p {
 [data-testid="stFileUploader"] button { border-color: #FF4500; background-color: white; color: #FF4500 !important; }
 [data-baseweb="tab"] { font-size: 1.2rem !important; font-weight: 600 !important; color: #212529 !important; }
 
-/* Primary Button Text must be white */
-.stButton>button { color: white !important; }
+/* FIX CODE BOX TEXT COLOR */
+pre, code {
+    color: #FFFFFF !important; /* Force white text in code blocks */
+    background-color: #212529 !important;
+}
+
+/* FIX ALL PRIMARY ACTION BUTTONS */
+.stButton>button, .stDownloadButton>button { 
+    font-weight: 600 !important; 
+    border-radius: 8px !important; 
+    padding: 0.75rem 1.5rem !important; 
+    border: none !important; 
+    background-image: linear-gradient(to right, #FF4500 0%, #FFA500 100%) !important; 
+    color: white !important; 
+    transition: all 0.3s ease !important; 
+    box-shadow: 0 4px 15px rgba(255, 69, 0, 0.2) !important; 
+    width: 100% !important;
+}
+.stButton>button:hover, .stDownloadButton>button:hover { 
+    transform: translateY(-2px) !important; 
+    box-shadow: 0 6px 20px rgba(255, 69, 0, 0.3) !important; 
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -67,34 +87,29 @@ def load_rules():
     except FileNotFoundError: st.error("Fatal Error: `rules.json` not found."); st.stop()
 RULES = load_rules()
 
-@st.cache_data
+@st.cache(allow_output_mutation=True)
 def get_info_from_winget(app_name):
     """Searches Winget GitHub repo for a professional description."""
     try:
-        search_term = app_name.split(' (')[0] # Clean up names like "7-Zip (x64)"
+        search_term = app_name.split(' (')[0]
         search_url = f"https://api.github.com/search/code?q={search_term}+in:path+repo:microsoft/winget-pkgs"
         headers = {'Accept': 'application/vnd.github.v3+json'}
         response = requests.get(search_url, headers=headers)
         response.raise_for_status()
         items = response.json().get('items', [])
-        if not items:
-            return f"{app_name} is a versatile utility designed to enhance productivity and streamline workflows."
-        
+        if not items: return f"{app_name} is a versatile utility designed to enhance productivity and streamline workflows."
         manifest_url = items[0]['html_url'].replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/')
         manifest_response = requests.get(manifest_url)
         manifest_response.raise_for_status()
         manifest_data = yaml.safe_load(manifest_response.text)
         description = manifest_data.get('Description', manifest_data.get('ShortDescription', ''))
         return description.strip() if description else f"{app_name} is a widely-used application for its category."
-
-    except Exception:
-        return f"{app_name} is a versatile utility designed to enhance productivity and streamline workflows."
+    except Exception: return f"{app_name} is a versatile utility designed to enhance productivity and streamline workflows."
 
 def parse_ps_output(output):
     data = {}
     matches = re.findall(r'^\s*([^:]+?)\s*:\s*(.*)$', output, re.MULTILINE)
-    for key, value in matches:
-        data[key.strip()] = value.strip()
+    for key, value in matches: data[key.strip()] = value.strip()
     return data
 
 @st.cache_data
@@ -108,14 +123,11 @@ def generate_professional_icon(app_name):
         g = int(top_color[1] + (bottom_color[1] - top_color[1]) * y / height)
         b = int(top_color[2] + (bottom_color[2] - top_color[2]) * y / height)
         draw.line([(0, y), (width, y)], fill=(r, g, b))
-    
     try: font = ImageFont.truetype("DejaVuSans-Bold.ttf", 100)
     except IOError: font = ImageFont.load_default()
-    
     words = re.findall(r'[A-Z][a-z]*|\d+', app_name) or [app_name]
     initials = "".join([word[0] for word in words[:2]]).upper()
     if not initials: initials = app_name[:2].upper() if len(app_name) > 1 else app_name[0].upper()
-    
     bbox = draw.textbbox((0,0), initials, font=font)
     text_width = bbox[2] - bbox[0]; text_height = bbox[3] - bbox[1]
     x = (width - text_width) / 2; y = (height - text_height) / 2
@@ -133,8 +145,7 @@ st.markdown("""
 with st.container():
     st.markdown('<div class="card">', unsafe_allow_html=True)
     
-    uploaded_files = st.file_uploader("1. Upload All Package Files (Installer, Docs, etc.)", 
-                                      accept_multiple_files=True, key="multi_uploader")
+    uploaded_files = st.file_uploader("1. Upload All Package Files", accept_multiple_files=True, key="multi_uploader")
     
     primary_installer = None
     if uploaded_files:
@@ -145,8 +156,8 @@ with st.container():
 
     ps_output_text = st.text_area("2. Paste Output from readData.ps1", height=155, key="ps_output")
     
-    parse_button_col, _ = st.columns([1, 3]) # Column to constrain the button width
-    with parse_button_col:
+    parse_col, _, _ = st.columns([1, 2, 1]) # Column to constrain the button width
+    with parse_col:
         if st.button("Parse Data from Script", key="parse_btn"):
             if ps_output_text:
                 st.session_state.parsed_data = parse_ps_output(ps_output_text)
@@ -162,12 +173,10 @@ with st.container():
         app_name = st.text_input("Application Name", value=data.get('AppName', ''), key="app_name_input")
         vendor = st.text_input("Vendor", value=data.get('Publisher', ''), key="vendor_input")
         version = st.text_input("Version", value=data.get('Version', ''), key="version_input")
-        
         is_interactive = st.checkbox("Installer requires user interaction (Use ServiceUI trick)", key="interactive_cb")
-        if is_interactive:
-            installer_type_key = "interactive"
-        else:
-            installer_type_key = st.selectbox("Installer Type", options=['exe_nsis', 'exe_inno', 'msi'], format_func=lambda x: RULES[x]['installer_type'], key="type_select")
+        
+        if is_interactive: installer_type_key = "interactive"
+        else: installer_type_key = st.selectbox("Installer Type", options=['exe_nsis', 'exe_inno', 'msi'], format_func=lambda x: RULES[x]['installer_type'], key="type_select")
             
         if st.button("🚀 Generate Recipe", use_container_width=True, type="primary", key="generate_btn"):
             st.session_state.generate = True
@@ -179,7 +188,6 @@ with st.container():
                 "architecture": data.get('Architecture', '64-bit'),
                 "install_context": data.get('InstallContext', 'System'),
             }
-
     st.markdown('</div>', unsafe_allow_html=True)
 
 if st.session_state.get('generate', False):
@@ -187,10 +195,8 @@ if st.session_state.get('generate', False):
     with st.container():
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.header("Deployment Recipe", anchor=False)
-        
         recipe_rules = RULES[data['installer_type_key']]
         description = get_info_from_winget(data['app_name'])
-
         tab1, tab2, tab3 = st.tabs(["📋 General Information", "⚙️ Configuration", "🔍 Detection Rules"])
         with tab1:
             st.text_input("App Name", value=data['app_name'], disabled=True, key="disp_app_name")
@@ -201,7 +207,7 @@ if st.session_state.get('generate', False):
             st.image(generated_icon, width=128)
             buf = io.BytesIO()
             generated_icon.save(buf, format="PNG")
-            st.download_button("Download Icon (.png)", buf.getvalue(), f"{data['app_name'].replace(' ', '_')}_icon.png", "image/png", use_container_width=True)
+            st.download_button("Download Icon (.png)", buf.getvalue(), f"{data['app_name'].replace(' ', '_')}_icon.png", use_container_width=True)
         with tab2:
             st.text_input("Install Context", value=data['install_context'], disabled=True, key="disp_context")
             st.text_input("Architecture", value=data['architecture'], disabled=True, key="disp_arch")
@@ -212,6 +218,5 @@ if st.session_state.get('generate', False):
             st.info(f"Recommended Method: {recipe_rules['detection_method']}")
             st.code("HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall", language='text')
             st.code("HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall", language='text')
-
         st.markdown('</div>', unsafe_allow_html=True)
     if 'generate' in st.session_state: del st.session_state['generate']
