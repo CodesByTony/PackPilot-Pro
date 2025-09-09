@@ -2,7 +2,6 @@ import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
 import json
 import io
-from streamlit_copy_to_clipboard import st_copy_to_clipboard
 
 # --- Page Configuration ---
 st.set_page_config(
@@ -49,8 +48,8 @@ def generate_icon(app_name):
 # --- UI Helper Functions ---
 def display_recipe_card(title, content, language='powershell'):
     st.subheader(title, divider='blue')
+    # We now rely on Streamlit's built-in copy button for st.code
     st.code(content, language=language)
-    st_copy_to_clipboard(content, f"Copy {title}", key=title.replace(" ", "_").lower())
 
 # --- Main Application UI ---
 st.title("🚀 PackPilot Pro"); st.markdown("##### The One-Click Packaging Dashboard for Intune & Patch My PC"); st.divider()
@@ -93,5 +92,5 @@ with st.container():
                     display_recipe_card("Registry Path (32-bit Apps on 64-bit OS)", "HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall", language='text')
                 elif "MSI" in recipe['detection_method']: st.warning("For MSI detection, you will need to find the Product Code after a test installation.")
                 st.divider()
-                st.header("✅ Page 5: Summary & Final Steps", divider='rainbow'); st.success("**Your recipe is ready!** Use the copy buttons above to fill out Patch My PC.")
+                st.header("✅ Page 5: Summary & Final Steps", divider='rainbow'); st.success("**Your recipe is ready!** Use the copy buttons in the code boxes above to fill out Patch My PC.")
                 st.markdown("- **Assignments:** Remember to assign to your primary test group: `AAD_Intune_Software_test`.")
