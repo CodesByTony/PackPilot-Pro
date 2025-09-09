@@ -5,6 +5,7 @@ import io
 import base64
 import re
 import requests
+import yaml
 
 # --- Page Configuration ---
 st.set_page_config(page_title="PackPilot Pro", layout="wide", initial_sidebar_state="collapsed")
@@ -33,36 +34,36 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 html, body, [class*="st-"] { font-family: 'Inter', sans-serif; }
-.stApp { color: #212529; } /* Default text color is dark */
+.stApp { color: #212529; }
 [data-testid="stSidebar"] { display: none; }
 .main .block-container { max-width: 900px; margin: 0 auto; padding-top: 5vh; }
-
-/* Title Styling */
 .title-container { text-align: center; margin-bottom: 2.5rem; }
 .title-container .title { font-size: 5.5rem; font-weight: 700; color: #2c3e50; letter-spacing: -4px; margin: 0; padding: 0; }
 .title-container .title sup { font-size: 2.2rem; font-weight: 600; color: #FF4500; top: -2.8rem; position: relative; left: 5px; }
 .title-container .tagline { font-size: 1.5rem; color: #555; margin-top: 0.5rem; }
-
-/* Card Styling */
 .card { background-color: rgba(255, 255, 255, 0.98); backdrop-filter: blur(12px); border-radius: 16px; padding: 2.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.07); border: 1px solid #EAEAEA; }
-
-/* FIX ALL TEXT COLORS */
+/* FIX ALL TEXT & BUTTON COLORS */
 [data-testid="stFileUploader"] label, 
 [data-testid="stTextArea"] label, 
 [data-testid="stTextInput"] label, 
 [data-testid="stSelectbox"] label,
 [data-testid="stCheckbox"] label,
-.uploadedFileName { 
-    color: #333 !important; 
+.uploadedFileName,
+.st-emotion-cache-16idsys p { /* This targets success message text */
+    color: #212529 !important; 
     font-weight: 600;
 }
-.uploadedFileName {
-    font-size: 0.9rem;
+.stSuccess {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
 }
-
+.uploadedFileName { font-size: 0.9rem; }
+[data-testid="stFileUploader"] button { border-color: #FF4500; background-color: white; color: #FF4500; }
+[data-baseweb="tab"] { font-size: 1.2rem !important; font-weight: 600 !important; color: #212529 !important; }
+.stAlert[data-testid="stInfo"] p { color: #212529 !important; }
 /* Primary "Generate" Button */
 .stButton>button { font-weight: 600; border-radius: 8px; padding: 0.75rem 1.5rem; border: none; background-image: linear-gradient(to right, #FF4500 0%, #FFA500 100%); color: white; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(255, 69, 0, 0.2); }
-.stButton>button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255, 69, 0, 0.3); }
+.stButton>button:hover { transform: translateY(-px); box-shadow: 0 6px 20px rgba(255, 69, 0, 0.3); }
 </style>
 """, unsafe_allow_html=True)
 
@@ -78,18 +79,29 @@ def load_rules():
 RULES = load_rules()
 
 @st.cache_data
-def generate_description_from_api(app_name, vendor):
+def get_info_from_winget(app_name):
+    """Searches Winget GitHub repo for a professional description."""
     try:
-        prompt = f"Write a concise, professional, 2-sentence description for the software '{app_name}' from vendor '{vendor}'. The description is for an enterprise software catalog. Focus on its primary function."
-        response = requests.post("https://api.deepinfra.com/v1/openai/chat/completions", json={
-            "model": "meta-llama/Llama-2-7b-chat-hf",
-            "messages": [{"role": "user", "content": prompt}], "max_tokens": 80
-        })
+        search_url = f"https://api.github.com/search/code?q={app_name}+in:path+repo:microsoft/winget-pkgs"
+        headers = {'Accept': 'application/vnd.github.v3+json'}
+        response = requests.get(search_url, headers=headers)
         response.raise_for_status()
-        description = response.json()['choices'][0]['message']['content'].replace("\"", "").strip()
-        return description
-    except Exception:
-        return f"{app_name} is a utility from {vendor} designed to enhance productivity and streamline workflows."
+        items = response.json().get('items', [])
+        if not items:
+            return f"{app_name} is a versatile utility designed to enhance productivity and streamline workflows."
+        
+        manifest_url = items[0]['html_url'].replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/')
+        manifest_response = requests.get(manifest_url)
+        manifest_response.raise_for_status()
+        
+        manifest_data = yaml.safe_load(manifest_response.text)
+        
+        # Look for the description in the most likely places
+        description = manifest_data.get('ShortDescription', manifest_data.get('Description', ''))
+        return description.strip() if description else f"{app_name} is a widely-used application for its category."
+
+    except Exception as e:
+        return f"{app_name} is a versatile utility designed to enhance productivity and streamline workflows."
 
 def parse_ps_output(output):
     data = {}
@@ -99,24 +111,30 @@ def parse_ps_output(output):
     return data
 
 @st.cache_data
-def generate_app_icon(app_name):
-    # This is the APP-SPECIFIC icon generator you wanted
+def generate_professional_icon(app_name):
     width, height = 256, 256
-    img = Image.new('RGB', (width, height), (245, 245, 245))
+    # Gradient background
+    top_color = (255, 120, 0); bottom_color = (255, 69, 0)
+    img = Image.new('RGB', (width, height))
     draw = ImageDraw.Draw(img)
+    for y in range(height):
+        r = int(top_color[0] + (bottom_color[0] - top_color[0]) * y / height)
+        g = int(top_color[1] + (bottom_color[1] - top_color[1]) * y / height)
+        b = int(top_color[2] + (bottom_color[2] - top_color[2]) * y / height)
+        draw.line([(0, y), (width, y)], fill=(r, g, b))
+    
     try:
         font = ImageFont.truetype("DejaVuSans-Bold.ttf", 100)
     except IOError:
         font = ImageFont.load_default()
     
-    words = app_name.split()
-    initials = "".join([word[0] for word in words[:2]]).upper() if words else "X"
+    words = re.findall(r'[A-Z][a-z]*|\d+', app_name) or [app_name]
+    initials = "".join([word[0] for word in words[:2]]).upper()
     
     bbox = draw.textbbox((0,0), initials, font=font)
     text_width = bbox[2] - bbox[0]; text_height = bbox[3] - bbox[1]
     x = (width - text_width) / 2; y = (height - text_height) / 2
-    
-    draw.text((x, y), initials, font=font, fill="#FF4500")
+    draw.text((x, y), initials, font=font, fill="#FFFFFF")
     return img
 
 # --- Main Application UI ---
@@ -130,41 +148,35 @@ st.markdown("""
 with st.container():
     st.markdown('<div class="card">', unsafe_allow_html=True)
     
-    # NEW MULTI-FILE UPLOADER
     uploaded_files = st.file_uploader("1. Upload All Package Files (Installer, Docs, etc.)", 
-                                      type=['exe', 'msi', 'pdf', 'txt', 'zip'], 
-                                      accept_multiple_files=True, 
-                                      key="multi_uploader")
+                                      accept_multiple_files=True, key="multi_uploader")
     
-    ps_output_text = st.text_area("2. Paste Output from readData.ps1", 
-                                  height=150, 
-                                  key="ps_output",
-                                  help="Run the installer in a Sandbox, execute readData.ps1, and paste the output here.")
-
     primary_installer = None
     if uploaded_files:
-        # Automatically find the primary installer
         installers = [f for f in uploaded_files if f.name.endswith(('.exe', '.msi'))]
         if installers:
             primary_installer = installers[0]
             st.success(f"Primary installer identified: **{primary_installer.name}**")
         else:
-            st.warning("No .exe or .msi file found in the upload. Please include the primary installer.")
+            st.warning("No .exe or .msi file found in the upload.")
 
-    # The Generate button now appears correctly
-    if primary_installer and ps_output_text:
+    ps_output_text = st.text_area("2. Paste Output from readData.ps1", height=155, key="ps_output")
+    
+    if st.button("Parse Data from Script", key="parse_btn", use_container_width=True):
+        if ps_output_text:
+            st.session_state.parsed_data = parse_ps_output(ps_output_text)
+            st.success("Data parsed successfully!")
+        else:
+            st.error("Please paste the script output into the text area.")
+
+    if primary_installer and 'parsed_data' in st.session_state and st.session_state.parsed_data:
         st.divider()
         st.subheader("3. Verify Auto-Filled Details", anchor=False)
         
-        parsed_data = parse_ps_output(ps_output_text)
-        
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            app_name = st.text_input("Application Name", value=parsed_data.get('AppName', ''), key="app_name_input")
-        with col2:
-            vendor = st.text_input("Vendor", value=parsed_data.get('Publisher', ''), key="vendor_input")
-        with col3:
-            version = st.text_input("Version", value=parsed_data.get('Version', ''), key="version_input")
+        data = st.session_state.parsed_data
+        app_name = st.text_input("Application Name", value=data.get('AppName', ''), key="app_name_input")
+        vendor = st.text_input("Vendor", value=data.get('Publisher', ''), key="vendor_input")
+        version = st.text_input("Version", value=data.get('Version', ''), key="version_input")
         
         is_interactive = st.checkbox("Installer requires user interaction (Use ServiceUI trick)", key="interactive_cb")
         if is_interactive:
@@ -178,11 +190,11 @@ with st.container():
                 "app_name": app_name, "vendor": vendor, "version": version,
                 "installer_type_key": installer_type_key,
                 "uploaded_filename": primary_installer.name,
-                "apps_and_features_name": parsed_data.get('AppsAndFeaturesName', app_name),
-                "architecture": parsed_data.get('Architecture', '64-bit'),
-                "install_context": parsed_data.get('InstallContext', 'System'),
+                "apps_and_features_name": data.get('AppsAndFeaturesName', app_name),
+                "architecture": data.get('Architecture', '64-bit'),
+                "install_context": data.get('InstallContext', 'System'),
             }
-    
+
     st.markdown('</div>', unsafe_allow_html=True)
 
 if st.session_state.get('generate', False):
@@ -192,37 +204,29 @@ if st.session_state.get('generate', False):
         st.header("Deployment Recipe", anchor=False)
         
         recipe_rules = RULES[data['installer_type_key']]
-        description = generate_description_from_api(data['app_name'], data['vendor'])
+        description = get_info_from_winget(data['app_name'])
 
         tab1, tab2, tab3 = st.tabs(["📋 General Information", "⚙️ Configuration", "🔍 Detection Rules"])
         with tab1:
             st.text_input("App Name", value=data['app_name'], disabled=True, key="disp_app_name")
             st.text_input("Vendor", value=data['vendor'], disabled=True, key="disp_vendor")
-            st.text_area("Description (AI Generated)", value=description, height=100, disabled=True, key="disp_desc")
-            
-            # THE APP-SPECIFIC ICON GENERATOR, REINSTATED
+            st.text_area("Description (from Winget)", value=description, height=100, disabled=True, key="disp_desc")
             st.subheader("Generated App Icon", anchor=False)
-            generated_icon = generate_app_icon(data['app_name'])
+            generated_icon = generate_professional_icon(data['app_name'])
             st.image(generated_icon, width=128)
             buf = io.BytesIO()
             generated_icon.save(buf, format="PNG")
             st.download_button("Download Icon (.png)", buf.getvalue(), f"{data['app_name'].replace(' ', '_')}_icon.png", "image/png", use_container_width=True)
-
         with tab2:
-            install_cmd = recipe_rules['install_command'].format(filename=data['uploaded_filename'])
-            uninstall_cmd = recipe_rules['uninstall_command'].format(app_name=data['app_name'], product_code="{YOUR_PRODUCT_CODE}")
-            
             st.text_input("Install Context", value=data['install_context'], disabled=True, key="disp_context")
             st.text_input("Architecture", value=data['architecture'], disabled=True, key="disp_arch")
             st.text_input("Apps & Features Name", value=data['apps_and_features_name'], disabled=True, key="disp_app_features")
+            install_cmd = recipe_rules['install_command'].format(filename=data['uploaded_filename'])
             st.code(install_cmd, language='powershell')
-
         with tab3:
-            st.info(f"**Recommended Method:** {recipe_rules['detection_method']}")
+            st.info(f"Recommended Method: {recipe_rules['detection_method']}")
             st.code("HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall", language='text')
             st.code("HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall", language='text')
 
         st.markdown('</div>', unsafe_allow_html=True)
-    # Important: Reset the state so the results don't persist on refresh
-    if 'generate' in st.session_state:
-        del st.session_state['generate']
+    if 'generate' in st.session_state: del st.session_state['generate']
