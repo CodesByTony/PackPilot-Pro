@@ -4,7 +4,7 @@ import json
 import io
 import base64
 
-# --- Page Configuration ---
+# --- Page Configuration (MUST be the first Streamlit command) ---
 st.set_page_config(
     page_title="PackPilot Pro",
     page_icon="🚀",
@@ -12,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- Function to load and encode the background image ---
+# --- Function to load and encode YOUR background image from the repository ---
 @st.cache_data
 def get_base64_of_image(file_path):
     try:
@@ -20,7 +20,7 @@ def get_base64_of_image(file_path):
             data = f.read()
         return base64.b64encode(data).decode()
     except FileNotFoundError:
-        # Fallback color if the image is not found
+        st.error(f"Background image '{file_path}' not found. Please ensure it's uploaded to the GitHub repository.")
         return None
 
 def set_background(image_file):
@@ -40,7 +40,7 @@ def set_background(image_file):
             unsafe_allow_html=True
         )
 
-# --- Custom CSS for the Professional, Google-Inspired Layout ---
+# --- Custom CSS for the Professional White & Orange Theme ---
 st.markdown("""
 <style>
 /* --- Font & General --- */
@@ -49,7 +49,12 @@ html, body, [class*="st-"] {
     font-family: 'Inter', sans-serif;
 }
 .stApp {
-    color: #0d1117;
+    color: #0d1117; /* Dark text for readability */
+}
+
+/* --- HIDE THE UNWANTED SIDEBAR --- */
+[data-testid="stSidebar"] {
+    display: none;
 }
 
 /* --- Top-Right Navigation Header --- */
@@ -62,59 +67,74 @@ html, body, [class*="st-"] {
 }
 .header .stButton>button {
     background-color: transparent;
-    color: #333;
-    border: none;
+    border: 1px solid #d0d0d0;
+    color: #505050;
     font-weight: 600;
+    border-radius: 8px;
 }
 .header .stButton>button:hover {
     background-color: #f0f0f0;
+    border-color: #a0a0a0;
 }
 .header .stButton>button:disabled {
     color: #aaa;
-    cursor: not-allowed;
 }
 
 /* --- Main Content Centering --- */
-.main-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+.main .block-container {
+    max-width: 900px;
+    margin: 0 auto;
     padding-top: 10vh; /* Push content down from the top */
 }
 
-/* --- Title and Tagline --- */
+/* --- BIGGER Title & Tagline --- */
 .title-container {
     text-align: center;
-    margin-bottom: 2rem;
+    margin-bottom: 2.5rem;
 }
 .title-container .title {
-    font-size: 4rem;
+    font-size: 5.5rem; /* Increased size */
     font-weight: 700;
     color: #2c3e50;
-    letter-spacing: -3px;
+    letter-spacing: -4px;
     margin: 0;
 }
 .title-container .title sup {
-    font-size: 1.5rem;
+    font-size: 2rem; /* Increased size */
     font-weight: 600;
     color: #FF4500;
+    top: -2.5rem; /* Adjust position */
 }
 .title-container .tagline {
-    font-size: 1.25rem;
+    font-size: 1.5rem; /* Increased size */
     color: #555;
+    margin-top: 0.5rem;
 }
 
-/* --- Card for Uploader and Results --- */
+/* --- Card Styling --- */
 .card {
-    width: 100%;
-    max-width: 800px; /* Limit width for better readability */
-    background-color: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
+    background-color: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(12px);
     border-radius: 16px;
     padding: 2.5rem;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.07);
     border: 1px solid #EAEAEA;
+}
+
+/* --- FIX UPLOADER BUTTON TEXT COLOR --- */
+[data-testid="stFileUploader"] label {
+    font-weight: 600;
+    color: #333 !important; /* Make label text dark */
+}
+[data-testid="stFileUploader"] button {
+    border-color: #FF4500;
+    background-color: white;
+    color: #FF4500; /* Make button text orange */
+}
+[data-testid="stFileUploader"] button:hover {
+    border-color: #FF4500;
+    background-color: #FFF9F0;
+    color: #FF4500;
 }
 
 /* --- Primary "Generate" Button --- */
@@ -125,11 +145,14 @@ html, body, [class*="st-"] {
     border: none;
     background-image: linear-gradient(to right, #FF4500 0%, #FFA500 100%);
     color: white;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(255, 69, 0, 0.2);
 }
 .stButton>button.primary-button:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(255, 69, 0, 0.3);
 }
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -145,20 +168,22 @@ def load_rules():
         st.error("Fatal Error: `rules.json` not found."); st.stop()
 RULES = load_rules()
 
+# --- UI Helper Functions ---
+def display_recipe_card(title, content, language='powershell'):
+    st.subheader(title, divider='orange')
+    st.code(content, language=language)
+
 # --- Header Section (Top Right Buttons) ---
 with st.container():
     st.markdown('<div class="header">', unsafe_allow_html=True)
     cols = st.columns([1, 1])
     with cols[0]:
-        st.button("📄 View Recipes", disabled=True, use_container_width=True)
+        st.button("📄 View Recipes", disabled=True, use_container_width=True, key="nav1")
     with cols[1]:
-        st.button("📊 View Dashboard", disabled=True, use_container_width=True)
+        st.button("📊 View Dashboard", disabled=True, use_container_width=True, key="nav2")
     st.markdown('</div>', unsafe_allow_html=True)
 
-# --- Main Content Area ---
-st.markdown('<div class="main-content">', unsafe_allow_html=True)
-
-# Title & Tagline
+# --- Main Title & Tagline ---
 st.markdown("""
 <div class="title-container">
     <h1 class="title">PackPilot<sup>pro</sup></h1>
@@ -169,12 +194,15 @@ st.markdown("""
 # Uploader & Inputs
 with st.container():
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    uploaded_file = st.file_uploader("", type=['exe', 'msi'])
+    
+    uploaded_file = st.file_uploader("", type=['exe', 'msi'], label_visibility="collapsed")
+    
     if uploaded_file:
-        # ... (rest of the logic remains the same)
-        st.session_state.app_name = uploaded_file.name.split('.')[0].replace('_', ' ').replace('-', ' ').title()
-        st.session_state.vendor = "VendorName"
-        st.session_state.version = "1.0.0"
+        if 'app_name' not in st.session_state or st.session_state.get('uploaded_filename') != uploaded_file.name:
+            st.session_state.app_name = uploaded_file.name.split('.')[0].replace('_', ' ').replace('-', ' ').title()
+            st.session_state.vendor = "VendorName"
+            st.session_state.version = "1.0.0"
+            st.session_state.uploaded_filename = uploaded_file.name
         
         st.divider()
         col1, col2, col3 = st.columns(3)
@@ -191,45 +219,34 @@ with st.container():
         else:
             st.session_state.installer_type_key = st.selectbox("Installer Type", options=['exe_nsis', 'exe_inno', 'msi'], format_func=lambda x: RULES[x]['installer_type'])
             
-        st.markdown('<style>#hidden_generate_button { display: none; }</style>', unsafe_allow_html=True) # Hide the actual button
         if st.button("🚀 Generate Recipe", use_container_width=True, type="primary"):
             st.session_state.generate = True
+        
+    else:
+        st.session_state.generate = False
             
     st.markdown('</div>', unsafe_allow_html=True)
 
 # Results Section
-if 'generate' in st.session_state and st.session_state.generate:
+if st.session_state.get('generate', False):
     with st.container():
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        # ... (rest of the display logic is the same)
         st.header("Deployment Recipe", anchor=False)
         recipe = RULES[st.session_state.installer_type_key]
         
         tab1, tab2, tab3 = st.tabs(["📋 General Info", "⚙️ Commands", "🔍 Detection"])
         with tab1:
-            # ... UI code for tab1 ...
             st.text_input("App Name:", value=st.session_state.app_name, disabled=True, key="d_app")
             st.text_input("Vendor:", value=st.session_state.vendor, disabled=True, key="d_ven")
             st.text_input("Version:", value=st.session_state.version, disabled=True, key="d_ver")
-
         with tab2:
-            # ... UI code for tab2 ...
             install_cmd = recipe['install_command'].format(filename=uploaded_file.name)
             uninstall_cmd = recipe['uninstall_command'].format(app_name=st.session_state.app_name, product_code="{YOUR_PRODUCT_CODE}")
-            st.subheader("Silent Install Command", divider='orange')
-            st.code(install_cmd, language='powershell')
-            st.subheader("Silent Uninstall Command", divider='orange')
-            st.code(uninstall_cmd, language='powershell')
-            
+            display_recipe_card("Silent Install Command", install_cmd)
+            display_recipe_card("Silent Uninstall Command", uninstall_cmd)
         with tab3:
-            # ... UI code for tab3 ...
             st.info(f"**Recommended Method:** {recipe['detection_method']}")
-            st.subheader("Registry Path (64-bit Apps)", divider='orange')
-            st.code("HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall", language='text')
-            st.subheader("Registry Path (32-bit Apps on 64-bit OS)", divider='orange')
-            st.code("HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall", language='text')
+            display_recipe_card("Registry Path (64-bit Apps)", "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall", language='text')
+            display_recipe_card("Registry Path (32-bit Apps on 64-bit OS)", "HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall", language='text')
 
         st.markdown('</div>', unsafe_allow_html=True)
-    st.session_state.generate = False
-
-st.markdown('</div>', unsafe_allow_html=True) # Close main-content div
