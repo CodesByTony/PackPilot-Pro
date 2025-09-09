@@ -1,2 +1,8 @@
-# PackPilot-Pro
-AI-Powered Packaging Assistant for Intune &amp; Patch My PC.
+---
+title: PackPilot Pro
+emoji: 🚀
+colorFrom: blue
+colorTo: green
+sdk: streamlit
+python_version: 3.10
+---
