@@ -11,7 +11,7 @@ import yaml
 st.set_page_config(page_title="PackPilot Pro", layout="wide", initial_sidebar_state="collapsed")
 
 # --- Function to load and encode YOUR background image from the repository ---
-@st.cache_data # ACTION: Replaced deprecated st.cache with the new st.cache_data
+@st.cache_data
 def get_base64_of_image(file_path):
     try:
         with open(file_path, "rb") as f: data = f.read()
@@ -33,38 +33,64 @@ def set_background(image_file):
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-/* Global Rule: Make ALL text black */
-html, body, [class*="st-"], .st-emotion-cache-16idsys p {
-    font-family: 'Inter', sans-serif;
-    color: #212529 !important; /* Force black text */
-}
+/* --- Global Settings --- */
+html, body, [class*="st-"] { font-family: 'Inter', sans-serif; }
+.stApp { color: #212529; }
 [data-testid="stSidebar"] { display: none; }
 .main .block-container { max-width: 900px; margin: 0 auto; padding-top: 5vh; }
-.title-container { text-align: center; margin-bottom: 2.5rem; }
-.title-container .title { font-size: 5.5rem; font-weight: 700; color: #2c3e50 !important; letter-spacing: -4px; margin: 0; padding: 0; }
-.title-container .title sup { font-size: 2.2rem; font-weight: 600; color: #FF4500 !important; top: -2.8rem; position: relative; left: 5px; }
-.title-container .tagline { font-size: 1.5rem; color: #555 !important; margin-top: 0.5rem; }
 .card { background-color: rgba(255, 255, 255, 0.98); backdrop-filter: blur(12px); border-radius: 16px; padding: 2.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.07); border: 1px solid #EAEAEA; }
 
-/* FIX ALL TEXT & BUTTON COLORS */
+/* --- Title Styling --- */
+.title-container { text-align: center; margin-bottom: 2.5rem; }
+.title-container .title { font-size: 5.5rem; font-weight: 700; color: #2c3e50; letter-spacing: -4px; margin: 0; padding: 0; }
+.title-container .title sup { font-size: 2.2rem; font-weight: 600; color: #FF4500; top: -2.8rem; position: relative; left: 5px; }
+.title-container .tagline { font-size: 1.5rem; color: #555; margin-top: 0.5rem; }
+
+/* --- WIDGET & TEXT COLOR FIXES --- */
+/* Labels for all widgets */
+[data-testid="stFileUploader"] label, 
+[data-testid="stTextArea"] label, 
+[data-testid="stTextInput"] label, 
+[data-testid="stSelectbox"] label,
+[data-testid="stCheckbox"] label { 
+    color: #212529 !important; 
+    font-weight: 600;
+}
+/* Uploaded filename text */
 .uploadedFileName { color: #212529 !important; font-weight: 600; }
-[data-testid="stFileUploader"] button { border-color: #FF4500; background-color: white; color: #FF4500 !important; }
+/* Success and Info message text */
+.stSuccess p, .stAlert[data-testid="stInfo"] p { color: #212529 !important; }
+/* Tab titles */
 [data-baseweb="tab"] { font-size: 1.2rem !important; font-weight: 600 !important; color: #212529 !important; }
 
-/* FIX CODE BOX TEXT COLOR */
+/* --- FIX FOR BLACK BOXES (Code and Text Area) --- */
+/* Text area where you paste the script output */
+[data-testid="stTextArea"] textarea {
+    background-color: #2B2B2B !important;
+    color: #FFFFFF !important;
+    font-family: monospace;
+}
+/* Code blocks in the final recipe output */
 pre, code {
-    color: #FFFFFF !important; /* Force white text in code blocks */
-    background-color: #212529 !important;
+    background-color: #2B2B2B !important;
+    color: #FFFFFF !important;
 }
 
-/* FIX ALL PRIMARY ACTION BUTTONS */
+/* --- BUTTON STYLING FIXES --- */
+/* Uploader's 'Browse files' button */
+[data-testid="stFileUploader"] button {
+    border-color: #FF4500 !important;
+    background-color: white !important;
+    color: #FF4500 !important;
+}
+/* All other primary buttons */
 .stButton>button, .stDownloadButton>button { 
     font-weight: 600 !important; 
     border-radius: 8px !important; 
     padding: 0.75rem 1.5rem !important; 
     border: none !important; 
     background-image: linear-gradient(to right, #FF4500 0%, #FFA500 100%) !important; 
-    color: white !important; 
+    color: white !important; /* White text for all orange buttons */
     transition: all 0.3s ease !important; 
     box-shadow: 0 4px 15px rgba(255, 69, 0, 0.2) !important; 
     width: 100% !important;
@@ -80,16 +106,16 @@ pre, code {
 set_background('Generated.png')
 
 # --- Load Rules & Helper Functions ---
-@st.cache_data # ACTION: Replaced deprecated st.cache with the new st.cache_data
+@st.cache_data
 def load_rules():
     try:
         with open('rules.json', 'r') as f: return json.load(f)
     except FileNotFoundError: st.error("Fatal Error: `rules.json` not found."); st.stop()
 RULES = load_rules()
 
-@st.cache_data # ACTION: Replaced deprecated st.cache with the new st.cache_data
+@st.cache_data
 def get_info_from_winget(app_name):
-    """Searches Winget GitHub repo for a professional description."""
+    # This function remains the same
     try:
         search_term = app_name.split(' (')[0]
         search_url = f"https://api.github.com/search/code?q={search_term}+in:path+repo:microsoft/winget-pkgs"
@@ -97,18 +123,14 @@ def get_info_from_winget(app_name):
         response = requests.get(search_url, headers=headers)
         response.raise_for_status()
         items = response.json().get('items', [])
-        if not items:
-            return f"{app_name} is a versatile utility designed to enhance productivity and streamline workflows."
-        
+        if not items: return f"{app_name} is a versatile utility designed to enhance productivity and streamline workflows."
         manifest_url = items[0]['html_url'].replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/')
         manifest_response = requests.get(manifest_url)
         manifest_response.raise_for_status()
         manifest_data = yaml.safe_load(manifest_response.text)
         description = manifest_data.get('Description', manifest_data.get('ShortDescription', ''))
         return description.strip() if description else f"{app_name} is a widely-used application for its category."
-
-    except Exception:
-        return f"{app_name} is a versatile utility designed to enhance productivity and streamline workflows."
+    except Exception: return f"{app_name} is a versatile utility designed to enhance productivity and streamline workflows."
 
 def parse_ps_output(output):
     data = {}
@@ -116,7 +138,7 @@ def parse_ps_output(output):
     for key, value in matches: data[key.strip()] = value.strip()
     return data
 
-@st.cache_data # ACTION: Replaced deprecated st.cache with the new st.cache_data
+@st.cache_data
 def generate_professional_icon(app_name):
     width, height = 256, 256
     top_color = (255, 120, 0); bottom_color = (255, 69, 0)
@@ -149,7 +171,8 @@ st.markdown("""
 with st.container():
     st.markdown('<div class="card">', unsafe_allow_html=True)
     
-    uploaded_files = st.file_uploader("1. Upload All Package Files", accept_multiple_files=True, key="multi_uploader")
+    uploaded_files = st.file_uploader("1. Upload All Package Files (Installer, Docs, etc.)", 
+                                      accept_multiple_files=True, key="multi_uploader")
     
     primary_installer = None
     if uploaded_files:
@@ -160,7 +183,7 @@ with st.container():
 
     ps_output_text = st.text_area("2. Paste Output from readData.ps1", height=155, key="ps_output")
     
-    parse_col, _, _ = st.columns([1, 2, 1]) # Column to constrain the button width
+    parse_col, _, _ = st.columns([1, 2, 1])
     with parse_col:
         if st.button("Parse Data from Script", key="parse_btn"):
             if ps_output_text:
@@ -211,7 +234,7 @@ if st.session_state.get('generate', False):
             st.image(generated_icon, width=128)
             buf = io.BytesIO()
             generated_icon.save(buf, format="PNG")
-            st.download_button("Download Icon (.png)", buf.getvalue(), f"{data['app_name'].replace(' ', '_')}_icon.png", use_container_width=True)
+            st.download_button("Download Icon (.png)", buf.getvalue(), f"{data['app_name'].replace(' ', '_')}_icon.png")
         with tab2:
             st.text_input("Install Context", value=data['install_context'], disabled=True, key="disp_context")
             st.text_input("Architecture", value=data['architecture'], disabled=True, key="disp_arch")
