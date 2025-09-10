@@ -432,10 +432,11 @@ def display_code_with_copy(code: str, language: str, unique_key: str):
             # Use session state to track copy action
             st.session_state[f'copied_{unique_key}'] = True
             # JavaScript injection for clipboard
+            escaped_code = code.replace('`', '\\`')  # Move this outside the f-string
             js = f"""
             <script>
             function copyToClipboard_{unique_key}() {{
-                const text = `{code.replace('`', '\\`')}`;
+                const text = `{escaped_code}`;
                 navigator.clipboard.writeText(text).then(function() {{
                     console.log('Copied to clipboard');
                 }}, function(err) {{
