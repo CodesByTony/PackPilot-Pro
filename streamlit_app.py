@@ -222,16 +222,16 @@ st.markdown("""
     }
     
     /* =========================== CODE BLOCKS =========================== */
-    .stCodeBlock, pre, code {
-        background-color: #2B2B2B !important;
-        color: #F0F0F0 !important;
-        border: 2px solid #FF6B35 !important;
-        border-radius: 10px !important;
-        padding: 1rem !important;
-        font-family: 'Consolas', 'Monaco', monospace !important;
-        line-height: 1.5 !important;
-    }
-    
+.stCodeBlock, pre, code {
+    background-color: #FFFFFF !important; /* Change background to white */
+    color: #1a1a1a !important; /* Change text color to black */
+    border: 2px solid #FF6B35 !important; /* Add orange outline */
+    border-radius: 10px !important; /* Keep the rounded corners */
+    padding: 1rem !important; /* Maintain padding */
+    font-family: 'Consolas', 'Monaco', monospace !important; /* Keep the font */
+    line-height: 1.5 !important; /* Maintain line height */
+}
+
     /* =========================== RESPONSIVE ADJUSTMENTS =========================== */
     @media (max-width: 768px) {
         .hero-title {
