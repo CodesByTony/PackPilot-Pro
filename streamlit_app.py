@@ -6,7 +6,7 @@ import base64
 import re
 import requests
 import yaml
-import streamlit_clipboard as clipboard # ACTION: Import the new, working clipboard library
+import streamlit_clipboard as clipboard # This line requires the library from requirements.txt
 
 # --- Page Configuration ---
 st.set_page_config(page_title="PackPilot Pro", layout="wide", initial_sidebar_state="collapsed")
@@ -30,45 +30,50 @@ def set_background(image_file):
             }}
             </style>""", unsafe_allow_html=True)
 
-# --- THE DEFINITIVE CSS FIX ---
+# --- THE DEFINITIVE CSS ---
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-/* --- Global Settings --- */
+/* Global Rule: Make ALL text black */
 html, body, [class*="st-"], .st-emotion-cache-16idsys p {
     font-family: 'Inter', sans-serif;
-    color: #212529; /* Default text is black */
+    color: #212529 !important; /* Force black text */
 }
 [data-testid="stSidebar"] { display: none; }
 .main .block-container { max-width: 900px; margin: 0 auto; padding-top: 5vh; }
+.title-container { text-align: center; margin-bottom: 2.5rem; }
+.title-container .title { font-size: 5.5rem; font-weight: 700; color: #2c3e50 !important; letter-spacing: -4px; margin: 0; padding: 0; }
+.title-container .title sup { font-size: 2.2rem; font-weight: 600; color: #FF4500 !important; top: -2.8rem; position: relative; left: 5px; }
+.title-container .tagline { font-size: 1.5rem; color: #555 !important; margin-top: 0.5rem; }
 .card { background-color: rgba(255, 255, 255, 0.98); backdrop-filter: blur(12px); border-radius: 16px; padding: 2.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.07); border: 1px solid #EAEAEA; }
 
-/* --- Title Styling --- */
-.title-container { text-align: center; margin-bottom: 2.5rem; }
-.title-container .title { font-size: 5.5rem; font-weight: 700; color: #2c3e50; letter-spacing: -4px; margin: 0; padding: 0; }
-.title-container .title sup { font-size: 2.2rem; font-weight: 600; color: #FF4500; top: -2.8rem; position: relative; left: 5px; }
-.title-container .tagline { font-size: 1.5rem; color: #555; margin-top: 0.5rem; }
-
-/* --- FIX FOR BLACK BOXES (Code and Text Area) --- */
-[data-testid="stTextArea"] textarea {
-    background-color: #2B2B2B !important;
-    color: #FFFFFF !important;
-    font-family: monospace;
-}
-pre, code {
-    background-color: #2B2B2B !important;
-    color: #FFFFFF !important;
-}
-
-/* --- BUTTON STYLING FIXES --- */
+/* FIX ALL TEXT & BUTTON COLORS */
+.uploadedFileName { color: #212529 !important; font-weight: 600; }
 [data-testid="stFileUploader"] button { border-color: #FF4500; background-color: white; color: #FF4500 !important; }
-.stButton>button, .stDownloadButton>button { 
-    font-weight: 600 !important; border-radius: 8px !important; padding: 0.75rem 1.5rem !important; 
-    border: none !important; background-image: linear-gradient(to right, #FF4500 0%, #FFA500 100%) !important; 
-    color: white !important; transition: all 0.3s ease !important; 
-    box-shadow: 0 4px 15px rgba(255, 69, 0, 0.2) !important; width: 100% !important;
+[data-baseweb="tab"] { font-size: 1.2rem !important; font-weight: 600 !important; color: #212529 !important; }
+
+/* FIX CODE BOX TEXT COLOR */
+pre, code {
+    color: #FFFFFF !important; /* Force white text in code blocks */
+    background-color: #2B2B2B !important;
 }
-.stButton>button:hover, .stDownloadButton>button:hover { transform: translateY(-2px) !important; box-shadow: 0 6px 20px rgba(255, 69, 0, 0.3) !important; }
+
+/* FIX ALL PRIMARY ACTION BUTTONS */
+.stButton>button, .stDownloadButton>button { 
+    font-weight: 600 !important; 
+    border-radius: 8px !important; 
+    padding: 0.75rem 1.5rem !important; 
+    border: none !important; 
+    background-image: linear-gradient(to right, #FF4500 0%, #FFA500 100%) !important; 
+    color: white !important; 
+    transition: all 0.3s ease !important; 
+    box-shadow: 0 4px 15px rgba(255, 69, 0, 0.2) !important; 
+    width: 100% !important;
+}
+.stButton>button:hover, .stDownloadButton>button:hover { 
+    transform: translateY(-2px) !important; 
+    box-shadow: 0 6px 20px rgba(255, 69, 0, 0.3) !important; 
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -85,7 +90,7 @@ RULES = load_rules()
 
 @st.cache_data
 def get_info_from_winget(app_name):
-    # This function remains the same
+    """Searches Winget GitHub repo for a professional description."""
     try:
         search_term = app_name.split(' (')[0]
         search_url = f"https://api.github.com/search/code?q={search_term}+in:path+repo:microsoft/winget-pkgs"
@@ -93,14 +98,18 @@ def get_info_from_winget(app_name):
         response = requests.get(search_url, headers=headers)
         response.raise_for_status()
         items = response.json().get('items', [])
-        if not items: return f"{app_name} is a versatile utility."
+        if not items:
+            return f"{app_name} is a versatile utility designed to enhance productivity and streamline workflows."
+        
         manifest_url = items[0]['html_url'].replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/')
         manifest_response = requests.get(manifest_url)
         manifest_response.raise_for_status()
         manifest_data = yaml.safe_load(manifest_response.text)
         description = manifest_data.get('Description', manifest_data.get('ShortDescription', ''))
-        return description.strip() if description else f"{app_name} is a widely-used application."
-    except Exception: return f"{app_name} is a versatile utility."
+        return description.strip() if description else f"{app_name} is a widely-used application for its category."
+
+    except Exception:
+        return f"{app_name} is a versatile utility designed to enhance productivity and streamline workflows."
 
 def parse_ps_output(output):
     data = {}
@@ -110,7 +119,6 @@ def parse_ps_output(output):
 
 @st.cache_data
 def generate_professional_icon(app_name):
-    # This function remains the same
     width, height = 256, 256
     top_color = (255, 120, 0); bottom_color = (255, 69, 0)
     img = Image.new('RGB', (width, height))
@@ -131,14 +139,14 @@ def generate_professional_icon(app_name):
     draw.text((x, y), initials, font=font, fill="#FFFFFF")
     return img
 
-# --- ACTION: REWRITTEN UI Helper Function with COPY BUTTON ---
-def display_recipe_card(title, content, language='powershell'):
+# --- UI Helper Function with WORKING COPY BUTTON ---
+def display_recipe_card(title, content):
     st.subheader(title, divider='orange')
-    st.code(content, language=language)
-    # Use columns to place the button neatly
-    _, col2 = st.columns([0.8, 0.2])
+    col1, col2 = st.columns([0.8, 0.2])
+    with col1:
+        st.code(content, language='powershell')
     with col2:
-        clipboard.copy(content, label="Copy Command", key=title.replace(" ", ""))
+        clipboard.copy(content, label="Copy", key=title.replace(" ", ""))
 
 
 # --- Main Application UI ---
@@ -219,7 +227,6 @@ if st.session_state.get('generate', False):
             st.text_input("Install Context", value=data['install_context'], disabled=True, key="disp_context")
             st.text_input("Architecture", value=data['architecture'], disabled=True, key="disp_arch")
             st.text_input("Apps & Features Name", value=data['apps_and_features_name'], disabled=True, key="disp_app_features")
-            # ACTION: Corrected the KeyError by using the right key name
             install_cmd = recipe_rules['install_command'].format(filename=data['uploaded_filename'])
             display_recipe_card("Install Command", install_cmd)
         with tab3:
