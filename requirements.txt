@@ -2,3 +2,4 @@ streamlit
 pillow
 requests
 PyYAML
+streamlit-clipboard
