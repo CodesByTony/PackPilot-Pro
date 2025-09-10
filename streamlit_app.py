@@ -11,7 +11,7 @@ import yaml
 st.set_page_config(page_title="PackPilot Pro", layout="wide", initial_sidebar_state="collapsed")
 
 # --- Function to load and encode YOUR background image from the repository ---
-@st.cache_data
+@st.cache_data # ACTION: Replaced deprecated st.cache with the new st.cache_data
 def get_base64_of_image(file_path):
     try:
         with open(file_path, "rb") as f: data = f.read()
@@ -36,7 +36,7 @@ st.markdown("""
 /* Global Rule: Make ALL text black */
 html, body, [class*="st-"], .st-emotion-cache-16idsys p {
     font-family: 'Inter', sans-serif;
-    color: #212529 !important;
+    color: #212529 !important; /* Force black text */
 }
 [data-testid="stSidebar"] { display: none; }
 .main .block-container { max-width: 900px; margin: 0 auto; padding-top: 5vh; }
@@ -80,14 +80,14 @@ pre, code {
 set_background('Generated.png')
 
 # --- Load Rules & Helper Functions ---
-@st.cache_data
+@st.cache_data # ACTION: Replaced deprecated st.cache with the new st.cache_data
 def load_rules():
     try:
         with open('rules.json', 'r') as f: return json.load(f)
     except FileNotFoundError: st.error("Fatal Error: `rules.json` not found."); st.stop()
 RULES = load_rules()
 
-@st.cache(allow_output_mutation=True)
+@st.cache_data # ACTION: Replaced deprecated st.cache with the new st.cache_data
 def get_info_from_winget(app_name):
     """Searches Winget GitHub repo for a professional description."""
     try:
@@ -97,14 +97,18 @@ def get_info_from_winget(app_name):
         response = requests.get(search_url, headers=headers)
         response.raise_for_status()
         items = response.json().get('items', [])
-        if not items: return f"{app_name} is a versatile utility designed to enhance productivity and streamline workflows."
+        if not items:
+            return f"{app_name} is a versatile utility designed to enhance productivity and streamline workflows."
+        
         manifest_url = items[0]['html_url'].replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/')
         manifest_response = requests.get(manifest_url)
         manifest_response.raise_for_status()
         manifest_data = yaml.safe_load(manifest_response.text)
         description = manifest_data.get('Description', manifest_data.get('ShortDescription', ''))
         return description.strip() if description else f"{app_name} is a widely-used application for its category."
-    except Exception: return f"{app_name} is a versatile utility designed to enhance productivity and streamline workflows."
+
+    except Exception:
+        return f"{app_name} is a versatile utility designed to enhance productivity and streamline workflows."
 
 def parse_ps_output(output):
     data = {}
@@ -112,7 +116,7 @@ def parse_ps_output(output):
     for key, value in matches: data[key.strip()] = value.strip()
     return data
 
-@st.cache_data
+@st.cache_data # ACTION: Replaced deprecated st.cache with the new st.cache_data
 def generate_professional_icon(app_name):
     width, height = 256, 256
     top_color = (255, 120, 0); bottom_color = (255, 69, 0)
